@@ -1,5 +1,5 @@
 raw_str = readchomp("./test1.jl")
-str_arr = split(raw_str, "\n")
+str_arr = split(raw_str, "#")
 
 struct PrimType
     name::String
@@ -15,19 +15,23 @@ function inferExpr(expr)
 end
 
 function inferSeq(ast, env)
+    if (typeof(ast) == LineNumberNode)
+        return BottomType(), env
+    end
+
     if (ast.head == Symbol("="))
         tp = inferExpr(ast.args[2])
         env = bind(ast.args[1], tp, env)
         return BottomType(), env
     elseif (ast.head == :block)
         for arg in ast.args
-            tp , env = inferSeq(ast, env)
+            tp , env = inferSeq(arg, env)
             if (typeof(tp) != BottomType)
                 return tp, env
             end
         end
         return BottomType(), env
-    elseif (ast.head == :LineNumberNode)
+    else
         return BottomType(), env
     end
 end
@@ -43,7 +47,7 @@ function main(env, str_arr)
         if (ast.head == Symbol("="))
             tp, env = inferSeq(ast, env)
         elseif (ast.head == Symbol("if"))
-            t1, env1 = inferSeq(ast.args[2])
+            t1, env1 = inferSeq(ast.args[2], env)
         end
     end
 end
